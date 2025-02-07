@@ -21,10 +21,10 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
-      # **安装 Android SDK 命令行工具**
+      # **下载并解压 Android SDK 命令行工具**
       - name: Install Android SDK Command-line Tools
         run: |
-          mkdir -p $HOME/Android/Sdk
+          mkdir -p $HOME/Android/Sdk/cmdline-tools
           curl -s https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -o commandlinetools.zip
           unzip commandlinetools.zip -d $HOME/Android/Sdk/cmdline-tools
           rm commandlinetools.zip
