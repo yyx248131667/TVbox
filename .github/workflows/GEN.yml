@@ -1,4 +1,4 @@
-name: GENERATE APK (Android 4.4)
+name: GENERATE APK
 
 on:
   workflow_dispatch:
@@ -6,48 +6,55 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      # 🛠️ 1. 拉取代码
-      - uses: actions/checkout@v4
+      # **检查出代码**
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 🛠️ 2. 设置 JDK 11（确保与 Gradle 兼容）
+      # **设置 JDK 11**
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
           distribution: 'temurin'
           java-version: '11'
 
-      # 🛠️ 3. 设置 Android SDK（安装 API 19）
-      - name: Set up Android SDK
+      # **安装 Android SDK 命令行工具**
+      - name: Install Android SDK Command-line Tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-11-jdk unzip
-          export ANDROID_HOME=$HOME/android-sdk
-          export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
-          mkdir -p $ANDROID_HOME/cmdline-tools
-          cd $ANDROID_HOME/cmdline-tools
-          curl -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip sdk-tools.zip -d latest
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-19" "build-tools;30.0.3" "platform-tools"
+          mkdir -p $HOME/Android/Sdk
+          curl -s https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -o commandlinetools.zip
+          unzip commandlinetools.zip -d $HOME/Android/Sdk/cmdline-tools
+          rm commandlinetools.zip
 
-      # 🛠️ 4. 配置 Gradle，构建 APK
+      # **安装 SDK 组件（API 19）**
+      - name: Install SDK Platforms & Build Tools
+        run: |
+          yes | $HOME/Android/Sdk/cmdline-tools/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "platforms;android-19" "build-tools;30.0.3" "platform-tools"
+
+      # **设置环境变量**
+      - name: Set Android SDK environment variables
+        run: |
+          echo "ANDROID_SDK_ROOT=$HOME/Android/Sdk" >> $GITHUB_ENV
+          echo "PATH=$HOME/Android/Sdk/cmdline-tools/bin:$PATH" >> $GITHUB_ENV
+
+      # **授予 Gradlew 运行权限**
       - name: Build With Gradle
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --build-cache --parallel --daemon --warning-mode all
 
-      # 🛠️ 5. 查找 APK 并准备上传
+      # **收集 APK**
       - name: Prepare App
         run: |
           mkdir -p ${{ github.workspace }}/apk/
           find . -name "*.apk" -exec mv {} ${{ github.workspace }}/apk/ \;
 
-      # 🛠️ 6. 上传 APK 到 GitHub Artifact
+      # **上传 APK 到 GitHub Actions**
       - name: Upload App To Artifact
         uses: actions/upload-artifact@v4
         with:
           name: box
-          path: ${{ github.workspace }}/apk/*
+          path: ${{ github.workspace }}/apk/
