@@ -1,4 +1,4 @@
-ame: GENERATE APK
+name: GENERATE APK
 
 on:
   #  push:
