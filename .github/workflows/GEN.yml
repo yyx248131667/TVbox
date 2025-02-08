@@ -1,60 +1,31 @@
-name: GENERATE APK
+ame: GENERATE APK
 
 on:
+  #  push:
+  #    branches:
+  #      - main
+  #  pull_request:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # **检查出代码**
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
-      # **设置 JDK 11**
-      - name: Set up JDK 11
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'temurin'
-          java-version: '11'
-
-      # **下载并解压 Android SDK 命令行工具**
-      - name: Install Android SDK Command-line Tools
-        run: |
-          mkdir -p $HOME/Android/Sdk/cmdline-tools
-          curl -s https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip -o commandlinetools.zip
-          unzip commandlinetools.zip -d $HOME/Android/Sdk/cmdline-tools/latest
-          rm commandlinetools.zip
-
-      # **安装 SDK 组件（API 19）**
-      - name: Install SDK Platforms & Build Tools
-        run: |
-          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "platforms;android-19" "build-tools;30.0.3" "platform-tools"
-
-      # **设置环境变量**
-      - name: Set Android SDK environment variables
-        run: |
-          echo "ANDROID_SDK_ROOT=$HOME/Android/Sdk" >> $GITHUB_ENV
-          echo "PATH=$HOME/Android/Sdk/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
-
-      # **授予 Gradlew 运行权限**
       - name: Build With Gradle
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --build-cache --parallel --daemon --warning-mode all
-
-      # **收集 APK**
+          ./gradlew assemblerelease --build-cache --parallel --daemon --warning-mode all
       - name: Prepare App
         run: |
           mkdir -p ${{ github.workspace }}/apk/
-          find . -name "*.apk" -exec mv {} ${{ github.workspace }}/apk/ \;
-
-      # **上传 APK 到 GitHub Actions**
+          for file in `find ~ -name "*.apk" -print`; do
+            mv "$file" ${{ github.workspace }}/apk/
+          done
       - name: Upload App To Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: box
-          path: ${{ github.workspace }}/apk/
+          path: ${{ github.workspace }}/apk/*
